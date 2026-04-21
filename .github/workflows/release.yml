@@ -36,7 +36,7 @@ jobs:
           magick src-tauri/wix/dialog.svg -resize 493x312! src-tauri/wix/dialog.bmp
 
       - name: Build and release
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -48,3 +48,5 @@ jobs:
           releaseBody: 'Ver el historial de cambios para más detalles.'
           releaseDraft: false
           prerelease: false
+          updaterJsonPreferNsis: true
+          updaterJsonKeepUniversal: false
