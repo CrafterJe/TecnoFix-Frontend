@@ -10,9 +10,22 @@ interface UpdateDialogState {
 type UpdateDialogCallback = (state: UpdateDialogState) => void;
 
 let dialogCallback: UpdateDialogCallback | null = null;
+let pendingState: UpdateDialogState | null = null;
 
 export function registerUpdateDialogCallback(cb: UpdateDialogCallback) {
   dialogCallback = cb;
+  if (pendingState) {
+    cb(pendingState);
+    pendingState = null;
+  }
+}
+
+function emitDialogState(state: UpdateDialogState) {
+  if (dialogCallback) {
+    dialogCallback(state);
+  } else {
+    pendingState = state;
+  }
 }
 
 export async function initUpdater() {
@@ -32,18 +45,16 @@ export async function initUpdater() {
       body: `La versión ${version} está disponible. Haz clic para actualizar.`,
     });
 
-    if (dialogCallback) {
-      dialogCallback({
-        open: true,
-        version,
-        body: update.body ?? null,
-        onUpdate: async () => {
-          await update.downloadAndInstall();
-          const { relaunch } = await import("@tauri-apps/plugin-process");
-          await relaunch();
-        },
-      });
-    }
+    emitDialogState({
+      open: true,
+      version,
+      body: update.body ?? null,
+      onUpdate: async () => {
+        await update.downloadAndInstall();
+        const { relaunch } = await import("@tauri-apps/plugin-process");
+        await relaunch();
+      },
+    });
   } catch (err) {
     console.error("[updater]", err);
   }
