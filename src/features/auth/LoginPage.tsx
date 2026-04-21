@@ -126,6 +126,10 @@ export function LoginPage() {
           TecnoFix &copy; {new Date().getFullYear()}
         </p>
       </div>
+
+      <span className="fixed bottom-3 left-4 text-xs text-muted-foreground/70 select-none">
+        v{__APP_VERSION__}
+      </span>
     </div>
   );
 }

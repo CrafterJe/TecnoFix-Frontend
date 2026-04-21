@@ -123,6 +123,16 @@ export function Sidebar() {
             )}
           </Button>
         </div>
+
+        {/* Version footer */}
+        <div
+          className={cn(
+            "px-3 pb-2 text-[10px] text-sidebar-foreground/50 select-none",
+            sidebarCollapsed ? "text-center" : "text-left"
+          )}
+        >
+          v{__APP_VERSION__}
+        </div>
       </aside>
     </TooltipProvider>
   );
