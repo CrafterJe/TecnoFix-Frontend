@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22 # Actualizado a una versión más reciente
+          node-version: 22
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -39,10 +39,21 @@ jobs:
           magick src-tauri/wix/banner.svg -resize 493x58! src-tauri/wix/banner.bmp
           magick src-tauri/wix/dialog.svg -resize 493x312! src-tauri/wix/dialog.bmp
 
+      - name: Debug signing key
+        run: |
+          if ([string]::IsNullOrEmpty($env:KEY)) {
+            echo "TAURI_SIGNING_PRIVATE_KEY esta VACIO"
+          } else {
+            echo "TAURI_SIGNING_PRIVATE_KEY esta SET (length: $($env:KEY.Length))"
+          }
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+
       - name: Build and release
         uses: tauri-apps/tauri-action@v0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Inyectamos el contenido de la llave directamente como variable de entorno
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
@@ -53,4 +64,5 @@ jobs:
           releaseDraft: false
           prerelease: false
           updaterJsonPreferNsis: true
+          # El flag verbose nos dirá exactamente por qué falla si la firma no se genera
           args: --verbose
