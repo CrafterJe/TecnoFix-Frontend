@@ -2,8 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import axios from "axios";
 import type { User, AuthTokens } from "@/types";
-
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+import { BASE_URL } from "@/lib/config";
 
 interface AuthState {
   user: User | null;
