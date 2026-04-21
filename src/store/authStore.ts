@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import axios from "axios";
+import { authApi } from "@/api/auth";
 import type { User, AuthTokens } from "@/types";
-import { BASE_URL } from "@/lib/config";
 
 interface AuthState {
   user: User | null;
@@ -28,13 +27,9 @@ export const useAuthStore = create<AuthState>()(
         const { tokens, user } = get();
         if (tokens?.access && user) {
           try {
-            const res = await axios.post(
-              `${BASE_URL}/users/auth/refresh/`,
-              { refresh: tokens.refresh },
-              { headers: { "Content-Type": "application/json" } }
-            );
+            const res = await authApi.refresh(tokens.refresh);
             set((s) => ({
-              tokens: { ...s.tokens!, access: res.data.access },
+              tokens: { ...s.tokens!, access: res.access },
               isAuthenticated: true,
               isInitialized: true,
             }));
@@ -47,13 +42,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       login: async (email, password) => {
-        const res = await axios.post(`${BASE_URL}/users/auth/login/`, { email, password });
-        const { access, refresh, user } = res.data;
-        set({
-          user,
-          tokens: { access, refresh },
-          isAuthenticated: true,
-        });
+        const { access, refresh, user } = await authApi.login(email, password);
+        set({ user, tokens: { access, refresh }, isAuthenticated: true });
       },
 
       logout: () => {
@@ -63,16 +53,9 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: async () => {
         const { tokens } = get();
         if (!tokens?.refresh) throw new Error("No refresh token");
-        const res = await axios.post(
-          `${BASE_URL}/users/auth/refresh/`,
-          { refresh: tokens.refresh },
-          { headers: { "Content-Type": "application/json" } }
-        );
-        const newAccess: string = res.data.access;
-        set((s) => ({
-          tokens: { ...s.tokens!, access: newAccess },
-        }));
-        return newAccess;
+        const res = await authApi.refresh(tokens.refresh);
+        set((s) => ({ tokens: { ...s.tokens!, access: res.access } }));
+        return res.access;
       },
 
       updateUser: (userData) => {

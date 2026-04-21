@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/uiStore";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
@@ -68,43 +67,41 @@ export function Sidebar() {
         </div>
 
         {/* Nav */}
-        <ScrollArea className="flex-1 py-2">
-          <nav className="px-2 space-y-1">
-            {visibleItems.map((item) => {
-              const Icon = item.icon;
-              const link = (
-                <NavLink
-                  to={item.href}
-                  end={item.href === "/"}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground/70",
-                      sidebarCollapsed && "justify-center px-2"
-                    )
-                  }
-                >
-                  <Icon className="h-5 w-5 shrink-0" />
-                  {!sidebarCollapsed && <span>{item.label}</span>}
-                </NavLink>
+        <nav className={cn("flex flex-col flex-1 px-2 py-4", sidebarCollapsed ? "justify-evenly" : "justify-start space-y-1")}>
+          {visibleItems.map((item) => {
+            const Icon = item.icon;
+            const link = (
+              <NavLink
+                to={item.href}
+                end={item.href === "/"}
+                className={({ isActive }) =>
+                  cn(
+                    "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/70",
+                    sidebarCollapsed && "justify-center px-2"
+                  )
+                }
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {!sidebarCollapsed && <span>{item.label}</span>}
+              </NavLink>
+            );
+
+            if (sidebarCollapsed) {
+              return (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>{link}</TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
               );
+            }
 
-              if (sidebarCollapsed) {
-                return (
-                  <Tooltip key={item.href}>
-                    <TooltipTrigger asChild>{link}</TooltipTrigger>
-                    <TooltipContent side="right">{item.label}</TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return <div key={item.href}>{link}</div>;
-            })}
-          </nav>
-        </ScrollArea>
+            return <div key={item.href}>{link}</div>;
+          })}
+        </nav>
 
         <Separator className="bg-sidebar-border" />
 
