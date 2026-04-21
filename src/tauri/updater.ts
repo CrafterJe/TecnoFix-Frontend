@@ -39,9 +39,8 @@ export async function initUpdater() {
         body: update.body ?? null,
         onUpdate: async () => {
           await update.downloadAndInstall();
-          // relaunch via Tauri core after install
-          const { invoke } = await import("@tauri-apps/api/core");
-          await invoke("plugin:process|relaunch");
+          const { relaunch } = await import("@tauri-apps/plugin-process");
+          await relaunch();
         },
       });
     }

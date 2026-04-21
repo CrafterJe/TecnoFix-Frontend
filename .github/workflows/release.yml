@@ -39,6 +39,21 @@ jobs:
           magick src-tauri/wix/banner.svg -resize 493x58! src-tauri/wix/banner.bmp
           magick src-tauri/wix/dialog.svg -resize 493x312! src-tauri/wix/dialog.bmp
 
+      - name: Read changelog for tag
+        id: changelog
+        shell: bash
+        run: |
+          FILE="docs/changelogs/${{ github.ref_name }}.md"
+          if [ -f "$FILE" ]; then
+            {
+              echo "body<<CHANGELOG_EOF"
+              cat "$FILE"
+              echo "CHANGELOG_EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "body=Ver el historial de commits para más detalles." >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and release
         uses: tauri-apps/tauri-action@v0.5
         env:
@@ -49,7 +64,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'TecnoFix ${{ github.ref_name }}'
-          releaseBody: 'Ver el historial de cambios para más detalles.'
+          releaseBody: ${{ steps.changelog.outputs.body }}
           releaseDraft: false
           prerelease: false
           updaterJsonPreferNsis: true
