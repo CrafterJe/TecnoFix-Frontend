@@ -1,5 +1,5 @@
 import type { User } from "./user";
-import type { Dispositivo, TipoDispositivo } from "./cliente";
+import type { Dispositivo } from "./cliente";
 import type { PaginationParams } from "./common";
 import type { Refaccion } from "./inventario";
 
