@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -25,7 +25,7 @@ export function OrdenesPage() {
   const [estadoFilter, setEstadoFilter] = useState<EstadoOrden | "todos">("todos");
   const [tecnicoFilter, setTecnicoFilter] = useState<number | undefined>();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["ordenes", page, estadoFilter, tecnicoFilter],
     queryFn: () =>
       ordenesApi.list({
@@ -85,10 +85,21 @@ export function OrdenesPage() {
         title="Órdenes de servicio"
         description="Gestión de órdenes del taller"
         actions={
-          <Button size="sm" onClick={() => navigate("/ordenes/nueva")}>
-            <Plus className="h-4 w-4" />
-            Nueva orden
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RotateCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refrescar
+            </Button>
+            <Button size="sm" onClick={() => navigate("/ordenes/nueva")}>
+              <Plus className="h-4 w-4" />
+              Nueva orden
+            </Button>
+          </>
         }
       />
 

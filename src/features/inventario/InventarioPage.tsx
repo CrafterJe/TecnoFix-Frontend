@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertTriangle, ArrowUpDown, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +39,7 @@ export function InventarioPage() {
   const [ajusteOpen, setAjusteOpen] = useState(false);
   const [ajusteRefaccion, setAjusteRefaccion] = useState<Refaccion | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["inventario", page],
     queryFn: () => inventarioApi.list({ page, page_size: 20 }),
   });
@@ -158,18 +158,29 @@ export function InventarioPage() {
         title="Inventario"
         description="Gestión de refacciones y piezas"
         actions={
-          isAdmin ? (
+          <>
             <Button
               size="sm"
-              onClick={() => {
-                setEditRefaccion(null);
-                setFormOpen(true);
-              }}
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
             >
-              <Plus className="h-4 w-4" />
-              Nueva refacción
+              <RotateCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refrescar
             </Button>
-          ) : null
+            {isAdmin && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditRefaccion(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Nueva refacción
+              </Button>
+            )}
+          </>
         }
       />
 

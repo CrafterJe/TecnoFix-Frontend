@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Plus, Pencil, UserCheck, UserX, KeyRound } from "lucide-react";
+import { Plus, Pencil, UserCheck, UserX, KeyRound, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,7 @@ export function UsersPage() {
   const [passOpen, setPassOpen] = useState(false);
   const [passUser, setPassUser] = useState<User | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["users"],
     queryFn: () => usersApi.list({ page_size: 100 }),
   });
@@ -128,16 +128,27 @@ export function UsersPage() {
         title="Usuarios"
         description="Gestión de usuarios del sistema"
         actions={
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditUser(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo usuario
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RotateCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refrescar
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditUser(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo usuario
+            </Button>
+          </>
         }
       />
 

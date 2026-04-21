@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye } from "lucide-react";
+import { Eye, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,7 +28,7 @@ export function AuditoriaPage() {
   const [entityFilter, setEntityFilter] = useState<string>("todos");
   const [detailLog, setDetailLog] = useState<AuditLog | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["auditoria", page, actionFilter, entityFilter],
     queryFn: () =>
       auditoriaApi.list({
@@ -101,6 +101,17 @@ export function AuditoriaPage() {
       <PageHeader
         title="Auditoría"
         description="Registro de actividad y cambios en el sistema"
+        actions={
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            <RotateCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            Refrescar
+          </Button>
+        }
       />
 
       {/* Filters */}

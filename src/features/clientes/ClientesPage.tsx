@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,7 @@ export function ClientesPage() {
   const [editCliente, setEditCliente] = useState<Cliente | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["clientes", page, search],
     queryFn: () => clientesApi.list({ page, page_size: 20, search }),
   });
@@ -90,16 +90,27 @@ export function ClientesPage() {
         title="Clientes"
         description="Gestión de clientes del taller"
         actions={
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditCliente(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo cliente
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RotateCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+              Refrescar
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditCliente(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo cliente
+            </Button>
+          </>
         }
       />
 
