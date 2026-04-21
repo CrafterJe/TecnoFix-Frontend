@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Wrench,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/uiStore";
@@ -30,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Órdenes", href: "/ordenes", icon: ClipboardList },
   { label: "Clientes", href: "/clientes", icon: Users },
   { label: "Inventario", href: "/inventario", icon: Package },
+  { label: "Cotizaciones", href: "/cotizaciones", icon: FileText },
   { label: "Usuarios", href: "/usuarios", icon: UserCog, roles: ["admin"] },
   { label: "Auditoría", href: "/auditoria", icon: ShieldCheck, roles: ["admin"] },
 ];

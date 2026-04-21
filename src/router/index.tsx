@@ -9,6 +9,7 @@ import { OrdenesPage } from "@/features/ordenes/OrdenesPage";
 import { OrdenDetailPage } from "@/features/ordenes/OrdenDetailPage";
 import { NuevaOrdenPage } from "@/features/ordenes/NuevaOrdenPage";
 import { InventarioPage } from "@/features/inventario/InventarioPage";
+import { CotizacionesPage } from "@/features/cotizaciones/CotizacionesPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { AuditoriaPage } from "@/features/auditoria/AuditoriaPage";
 
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: "ordenes/nueva", element: <NuevaOrdenPage /> },
       { path: "ordenes/:id", element: <OrdenDetailPage /> },
       { path: "inventario", element: <InventarioPage /> },
+      { path: "cotizaciones", element: <CotizacionesPage /> },
       {
         path: "usuarios",
         element: (

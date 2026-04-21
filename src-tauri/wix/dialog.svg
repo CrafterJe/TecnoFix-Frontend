@@ -1,0 +1,15 @@
+<svg width="493" height="312" viewBox="0 0 493 312" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo blanco -->
+  <rect width="493" height="312" fill="white"/>
+  <!-- Panel izquierdo con color de marca -->
+  <rect width="164" height="312" fill="#2D2B6E"/>
+  <!-- Acento inferior izquierdo -->
+  <rect x="0" y="280" width="164" height="32" fill="#02C5CE"/>
+  <!-- Logo centrado en panel izquierdo -->
+  <svg x="32" y="80" width="100" height="100" viewBox="0 0 195 195" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M130.765 151.07L98.7654 175.5V45.3718H174.765L160.765 77.2806H130.765V151.07Z" fill="#02C5CE"/>
+    <path d="M53.7654 150.073L85.7654 175.001V32.4088H179.765L193.765 0.5H0.765384L14.7654 32.4088H53.7654V150.073Z" fill="white"/>
+  </svg>
+  <text x="82" y="200" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="white" text-anchor="middle">TecnoFix</text>
+  <text x="82" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="9" fill="#02C5CE" text-anchor="middle">v0.1.4</text>
+</svg>
