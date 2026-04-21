@@ -1,5 +1,6 @@
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +17,7 @@ import { ROL_LABELS } from "@/lib/helpers";
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const initials = user?.nombre
     .split(" ")
@@ -63,7 +65,7 @@ export function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem onClick={() => navigate("/perfil")}>
               <User className="mr-2 h-4 w-4" />
               Mi perfil
             </DropdownMenuItem>
