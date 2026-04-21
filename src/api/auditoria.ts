@@ -1,18 +1,11 @@
 import apiClient from "@/lib/axios";
-import type { AuditLog, PaginatedResponse, PaginationParams, AuditAction } from "@/types";
-
-interface AuditoriaFilters extends PaginationParams {
-  entity?: string;
-  action?: AuditAction;
-  user?: number;
-  fecha_inicio?: string;
-  fecha_fin?: string;
-}
+import { ENDPOINTS } from "@/lib/config";
+import type { AuditLog, AuditoriaFilters, PaginatedResponse } from "@/types";
 
 export const auditoriaApi = {
   list: (params?: AuditoriaFilters) =>
-    apiClient.get<PaginatedResponse<AuditLog>>("/auditoria/", { params }).then((r) => r.data),
+    apiClient.get<PaginatedResponse<AuditLog>>(ENDPOINTS.auditoria.list, { params }).then((r) => r.data),
 
   get: (id: number) =>
-    apiClient.get<AuditLog>(`/auditoria/${id}/`).then((r) => r.data),
+    apiClient.get<AuditLog>(ENDPOINTS.auditoria.detail(id)).then((r) => r.data),
 };

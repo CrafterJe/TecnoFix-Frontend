@@ -65,6 +65,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
+        sans: ["Montserrat", "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "Fira Code", "Cascadia Code", "monospace"],
       },
       keyframes: {

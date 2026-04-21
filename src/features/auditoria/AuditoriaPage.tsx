@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, RotateCw } from "lucide-react";
+import { Eye, RotateCw, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +18,140 @@ import { Pagination } from "@/components/shared/Pagination";
 import { auditoriaApi } from "@/api/auditoria";
 import { formatDate, AUDIT_ACTION_LABELS, AUDIT_ACTION_COLORS } from "@/lib/helpers";
 import type { AuditLog, AuditAction } from "@/types";
+
+const FIELD_LABELS: Record<string, string> = {
+  estado: "Estado",
+  nombre: "Nombre",
+  email: "Correo",
+  rol: "Rol",
+  activo: "Activo",
+  telefono: "Teléfono",
+  problema_reportado: "Problema reportado",
+  diagnostico: "Diagnóstico",
+  costo_estimado: "Costo estimado",
+  costo_final: "Costo final",
+  assigned_to: "Asignado a",
+  received_by: "Recibido por",
+  created_by: "Creado por",
+  delivered_by: "Entregado por",
+  dispositivo: "Dispositivo",
+  marca: "Marca",
+  modelo: "Modelo",
+  tipo: "Tipo",
+  cliente: "Cliente",
+  stock: "Stock",
+  stock_minimo: "Stock mínimo",
+  precio_costo: "Precio costo",
+  precio_venta: "Precio venta",
+  categoria: "Categoría",
+  descripcion: "Descripción",
+  password: "Contraseña",
+};
+
+function formatFieldValue(value: unknown): string {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "boolean") return value ? "Sí" : "No";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function AuditChanges({ log }: { log: AuditLog }) {
+  const { action, old_value, new_value } = log;
+
+  if (action === "LOGIN" || (!old_value && !new_value)) {
+    return <p className="text-sm text-muted-foreground">Sin datos adicionales.</p>;
+  }
+
+  if (action === "CREATE" && new_value) {
+    const entries = Object.entries(new_value).filter(
+      ([k]) => !["id", "created_at", "updated_at"].includes(k)
+    );
+    return (
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-muted-foreground border-b border-border">
+            <th className="pb-2 font-medium w-1/3">Campo</th>
+            <th className="pb-2 font-medium">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map(([k, v]) => (
+            <tr key={k} className="border-b border-border/50">
+              <td className="py-2 text-muted-foreground">{FIELD_LABELS[k] ?? k}</td>
+              <td className="py-2 font-medium">{formatFieldValue(v)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  if (action === "DELETE" && old_value) {
+    const entries = Object.entries(old_value).filter(
+      ([k]) => !["id", "created_at", "updated_at"].includes(k)
+    );
+    return (
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-muted-foreground border-b border-border">
+            <th className="pb-2 font-medium w-1/3">Campo</th>
+            <th className="pb-2 font-medium">Valor eliminado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map(([k, v]) => (
+            <tr key={k} className="border-b border-border/50">
+              <td className="py-2 text-muted-foreground">{FIELD_LABELS[k] ?? k}</td>
+              <td className="py-2 font-medium text-destructive">{formatFieldValue(v)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  if (old_value && new_value) {
+    const changed = Object.keys(new_value).filter(
+      (k) => JSON.stringify(old_value[k]) !== JSON.stringify(new_value[k])
+        && !["updated_at"].includes(k)
+    );
+    if (!changed.length) {
+      return <p className="text-sm text-muted-foreground">Sin cambios detectados.</p>;
+    }
+    return (
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-muted-foreground border-b border-border">
+            <th className="pb-2 font-medium w-1/3">Campo</th>
+            <th className="pb-2 font-medium w-1/3">Antes</th>
+            <th className="pb-2 w-6" />
+            <th className="pb-2 font-medium">Después</th>
+          </tr>
+        </thead>
+        <tbody>
+          {changed.map((k) => (
+            <tr key={k} className="border-b border-border/50">
+              <td className="py-2 text-muted-foreground">{FIELD_LABELS[k] ?? k}</td>
+              <td className="py-2">
+                <span className="inline-block bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs">
+                  {formatFieldValue(old_value[k])}
+                </span>
+              </td>
+              <td className="py-2"><ArrowRight className="h-3 w-3 text-muted-foreground" /></td>
+              <td className="py-2">
+                <span className="inline-block bg-accent/20 text-accent rounded px-2 py-0.5 text-xs font-medium">
+                  {formatFieldValue(new_value[k])}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
+  return null;
+}
 
 const ACTIONS: AuditAction[] = ["CREATE", "UPDATE", "DELETE", "ASSIGN", "STATUS_CHANGE", "LOGIN"];
 const ENTITIES = ["orden", "cliente", "dispositivo", "refaccion", "user"];
@@ -49,7 +183,7 @@ export function AuditoriaPage() {
     {
       key: "user",
       header: "Usuario",
-      render: (r) => r.user?.nombre ?? "Sistema",
+      render: (r) => r.user_nombre,
     },
     {
       key: "action",
@@ -58,7 +192,7 @@ export function AuditoriaPage() {
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${AUDIT_ACTION_COLORS[r.action]}`}
         >
-          {AUDIT_ACTION_LABELS[r.action]}
+          {r.action_display}
         </span>
       ),
     },
@@ -181,10 +315,10 @@ export function AuditoriaPage() {
           </DialogHeader>
           {detailLog && (
             <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 pb-2 border-b border-border">
                 <div>
                   <p className="text-muted-foreground">Usuario</p>
-                  <p className="font-medium">{detailLog.user?.nombre ?? "Sistema"}</p>
+                  <p className="font-medium">{detailLog.user_nombre}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Fecha</p>
@@ -192,37 +326,16 @@ export function AuditoriaPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Entidad</p>
-                  <p className="font-medium capitalize">
-                    {detailLog.entity} #{detailLog.entity_id}
-                  </p>
+                  <p className="font-medium capitalize">{detailLog.entity} #{detailLog.entity_id}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Dirección IP</p>
                   <p className="font-mono">{detailLog.ip_address}</p>
                 </div>
               </div>
-
-              {detailLog.old_value && (
-                <div>
-                  <p className="text-muted-foreground mb-1">Valor anterior</p>
-                  <ScrollArea className="h-32 rounded-md border bg-muted/50 p-3">
-                    <pre className="text-xs font-mono whitespace-pre-wrap">
-                      {JSON.stringify(detailLog.old_value, null, 2)}
-                    </pre>
-                  </ScrollArea>
-                </div>
-              )}
-
-              {detailLog.new_value && (
-                <div>
-                  <p className="text-muted-foreground mb-1">Valor nuevo</p>
-                  <ScrollArea className="h-32 rounded-md border bg-muted/50 p-3">
-                    <pre className="text-xs font-mono whitespace-pre-wrap">
-                      {JSON.stringify(detailLog.new_value, null, 2)}
-                    </pre>
-                  </ScrollArea>
-                </div>
-              )}
+              <ScrollArea className="max-h-72">
+                <AuditChanges log={detailLog} />
+              </ScrollArea>
             </div>
           )}
         </DialogContent>

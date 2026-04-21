@@ -184,21 +184,31 @@ function UserFormDialog({
   const form = useForm<UsuarioFormData>({
     resolver: zodResolver(usuarioSchema),
     defaultValues: user
-      ? { nombre: user.nombre, email: user.email, rol: user.rol, password: "" }
-      : { nombre: "", email: "", rol: "recepcion", password: "" },
+      ? { nombre: user.nombre, email: user.email, rol: user.rol, password: "", password_confirm: "" }
+      : { nombre: "", email: "", rol: "recepcion", password: "", password_confirm: "" },
   });
 
   const mutation = useMutation({
     mutationFn: (data: UsuarioFormData) => {
-      const payload = { ...data, password: data.password || undefined };
-      return isEdit ? usersApi.update(user!.id, payload) : usersApi.create(payload as Required<UsuarioFormData>);
+      if (isEdit) {
+        const { password_confirm: _, ...rest } = data;
+        const payload = { ...rest, password: data.password || undefined };
+        return usersApi.update(user!.id, payload);
+      }
+      return usersApi.create(data as Required<UsuarioFormData>);
     },
     onSuccess: () => {
       toast.success(isEdit ? "Usuario actualizado" : "Usuario creado");
       qc.invalidateQueries({ queryKey: ["users"] });
       onOpenChange(false);
     },
-    onError: () => toast.error("Error al guardar"),
+    onError: (err: unknown) => {
+      const detail = (err as { response?: { data?: Record<string, string[]> } })?.response?.data;
+      const message = detail
+        ? Object.values(detail).flat().join(" ")
+        : "Error al guardar";
+      toast.error("Error al guardar", { description: message });
+    },
   });
 
   return (
@@ -238,13 +248,22 @@ function UserFormDialog({
               </FormItem>
             )} />
             {!isEdit && (
-              <FormField control={form.control} name="password" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contraseña inicial</FormLabel>
-                  <FormControl><Input type="password" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <>
+                <FormField control={form.control} name="password" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña inicial</FormLabel>
+                    <FormControl><Input type="password" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="password_confirm" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar contraseña</FormLabel>
+                    <FormControl><Input type="password" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </>
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

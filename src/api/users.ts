@@ -1,35 +1,29 @@
 import apiClient from "@/lib/axios";
-import type { User, PaginatedResponse, PaginationParams } from "@/types";
-
-interface UserPayload {
-  nombre: string;
-  email: string;
-  rol: string;
-  password?: string;
-}
+import { ENDPOINTS } from "@/lib/config";
+import type { User, UserPayload, PaginatedResponse, PaginationParams } from "@/types";
 
 export const usersApi = {
   list: (params?: PaginationParams) =>
-    apiClient.get<PaginatedResponse<User>>("/users/", { params }).then((r) => r.data),
+    apiClient.get<PaginatedResponse<User>>(ENDPOINTS.users.list, { params }).then((r) => r.data),
 
   get: (id: number) =>
-    apiClient.get<User>(`/users/${id}/`).then((r) => r.data),
+    apiClient.get<User>(ENDPOINTS.users.detail(id)).then((r) => r.data),
 
   create: (data: UserPayload) =>
-    apiClient.post<User>("/users/", data).then((r) => r.data),
+    apiClient.post<User>(ENDPOINTS.users.list, data).then((r) => r.data),
 
   update: (id: number, data: Partial<UserPayload>) =>
-    apiClient.patch<User>(`/users/${id}/`, data).then((r) => r.data),
+    apiClient.patch<User>(ENDPOINTS.users.detail(id), data).then((r) => r.data),
 
   delete: (id: number) =>
-    apiClient.delete(`/users/${id}/`),
+    apiClient.delete(ENDPOINTS.users.detail(id)),
 
   cambiarPassword: (id: number, password: string) =>
-    apiClient.post(`/users/${id}/cambiar-password/`, { password }),
+    apiClient.post(ENDPOINTS.users.cambiarPassword(id), { password }),
 
   activar: (id: number) =>
-    apiClient.post<User>(`/users/${id}/activar/`).then((r) => r.data),
+    apiClient.post<User>(ENDPOINTS.users.activar(id)).then((r) => r.data),
 
   desactivar: (id: number) =>
-    apiClient.post<User>(`/users/${id}/desactivar/`).then((r) => r.data),
+    apiClient.post<User>(ENDPOINTS.users.desactivar(id)).then((r) => r.data),
 };
