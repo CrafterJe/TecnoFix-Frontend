@@ -41,9 +41,6 @@
     ],
     "windows": {
       "wix": {}
-    },
-    "updater": {
-      "active": true
     }
   },
   "plugins": {
