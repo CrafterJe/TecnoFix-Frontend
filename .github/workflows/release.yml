@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+# Fix para la advertencia de Node.js 20
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   release:
     strategy:
@@ -17,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22 # Actualizado a una versión más reciente
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -35,19 +39,11 @@ jobs:
           magick src-tauri/wix/banner.svg -resize 493x58! src-tauri/wix/banner.bmp
           magick src-tauri/wix/dialog.svg -resize 493x312! src-tauri/wix/dialog.bmp
 
-      - name: Write signing key to file
-        run: |
-          $keyPath = "$env:RUNNER_TEMP\tecnofix.key"
-          [System.IO.File]::WriteAllText($keyPath, "$env:TAURI_SIGNING_PRIVATE_KEY")
-          echo "TAURI_KEY_PATH=$keyPath" >> $env:GITHUB_ENV
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-
       - name: Build and release
         uses: tauri-apps/tauri-action@v0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY_PATH: ${{ env.TAURI_KEY_PATH }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
         with:
@@ -57,4 +53,3 @@ jobs:
           releaseDraft: false
           prerelease: false
           updaterJsonPreferNsis: true
-          updaterJsonKeepUniversal: false
