@@ -23,5 +23,17 @@ export const cambiarPasswordSchema = z
     path: ["password_confirm"],
   });
 
+export const cambiarPasswordPropioSchema = z
+  .object({
+    password_actual: z.string().min(1, "Ingresa tu contraseña actual"),
+    password_nuevo: z.string().min(8, "Mínimo 8 caracteres"),
+    password_nuevo_confirm: z.string(),
+  })
+  .refine((d) => d.password_nuevo === d.password_nuevo_confirm, {
+    message: "Las contraseñas no coinciden",
+    path: ["password_nuevo_confirm"],
+  });
+
 export type UsuarioFormData = z.infer<typeof usuarioSchema>;
 export type CambiarPasswordFormData = z.infer<typeof cambiarPasswordSchema>;
+export type CambiarPasswordPropioFormData = z.infer<typeof cambiarPasswordPropioSchema>;
