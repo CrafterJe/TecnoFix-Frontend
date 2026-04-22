@@ -13,6 +13,7 @@ interface AuthState {
   refreshToken: () => Promise<string>;
   initializeAuth: () => Promise<void>;
   updateUser: (user: Partial<User>) => void;
+  setTokens: (tokens: AuthTokens) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -62,6 +63,10 @@ export const useAuthStore = create<AuthState>()(
         set((s) => ({
           user: s.user ? { ...s.user, ...userData } : null,
         }));
+      },
+
+      setTokens: (tokens) => {
+        set({ tokens });
       },
     }),
     {
