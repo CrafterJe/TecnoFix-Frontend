@@ -38,6 +38,7 @@ export const ENDPOINTS = {
     list: "/users/",
     detail: (id: number) => `/users/${id}/`,
     cambiarPassword: (id: number) => `/users/${id}/cambiar-password/`,
+    cambiarPasswordPropio: (id: number) => `/users/${id}/change-password/`,
     activar: (id: number) => `/users/${id}/activar/`,
     desactivar: (id: number) => `/users/${id}/desactivar/`,
   },

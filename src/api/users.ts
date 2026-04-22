@@ -21,6 +21,9 @@ export const usersApi = {
   cambiarPassword: (id: number, password: string) =>
     apiClient.post(ENDPOINTS.users.cambiarPassword(id), { password }),
 
+  cambiarPasswordPropio: (id: number, data: { password_actual: string; password_nuevo: string; password_nuevo_confirm: string }) =>
+    apiClient.post(ENDPOINTS.users.cambiarPasswordPropio(id), data),
+
   activar: (id: number) =>
     apiClient.post<User>(ENDPOINTS.users.activar(id)).then((r) => r.data),
 

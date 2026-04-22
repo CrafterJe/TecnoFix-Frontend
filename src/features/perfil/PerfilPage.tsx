@@ -1,13 +1,22 @@
-import { ArrowLeft, Mail, Shield, User as UserIcon, Wrench } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, KeyRound, Loader2, Mail, Shield, User as UserIcon } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { ROL_LABELS } from "@/lib/helpers";
+import { cambiarPasswordPropioSchema, type CambiarPasswordPropioFormData } from "@/lib/schemas";
+import { usersApi } from "@/api/users";
 
 const ROL_COLORS: Record<string, string> = {
   admin: "bg-primary/15 text-primary border-primary/30",
@@ -71,20 +80,7 @@ export function PerfilPage() {
         </CardContent>
       </Card>
 
-      {/* Placeholder de opciones futuras */}
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <Wrench className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold">Más opciones en camino</h2>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              Pronto podrás editar tu información, cambiar tu contraseña y configurar tus preferencias.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <ChangePasswordCard userId={user?.id} />
     </div>
   );
 }
@@ -100,5 +96,96 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
         <p className="text-sm font-medium truncate">{value}</p>
       </div>
     </div>
+  );
+}
+
+function PasswordInput({ id, placeholder, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { id: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type={show ? "text" : "password"}
+        placeholder={placeholder}
+        className="pr-10"
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
+function ChangePasswordCard({ userId }: { userId?: number }) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CambiarPasswordPropioFormData>({
+    resolver: zodResolver(cambiarPasswordPropioSchema),
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: CambiarPasswordPropioFormData) =>
+      usersApi.cambiarPasswordPropio(userId!, data),
+    onSuccess: () => {
+      toast.success("Contraseña actualizada correctamente");
+      reset();
+    },
+    onError: (err: any) => {
+      const detail =
+        err?.response?.data?.password_actual?.[0] ||
+        err?.response?.data?.detail ||
+        "No se pudo actualizar la contraseña";
+      toast.error(detail);
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-base">Cambiar contraseña</CardTitle>
+        </div>
+        <CardDescription>Ingresa tu contraseña actual y elige una nueva.</CardDescription>
+      </CardHeader>
+      <Separator />
+      <CardContent className="pt-5">
+        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="grid gap-4 max-w-sm">
+          <div className="grid gap-1.5">
+            <Label htmlFor="password_actual">Contraseña actual</Label>
+            <PasswordInput id="password_actual" placeholder="••••••••" {...register("password_actual")} />
+            {errors.password_actual && (
+              <p className="text-xs text-destructive">{errors.password_actual.message}</p>
+            )}
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="password_nuevo">Nueva contraseña</Label>
+            <PasswordInput id="password_nuevo" placeholder="••••••••" {...register("password_nuevo")} />
+            {errors.password_nuevo && (
+              <p className="text-xs text-destructive">{errors.password_nuevo.message}</p>
+            )}
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="password_nuevo_confirm">Confirmar nueva contraseña</Label>
+            <PasswordInput id="password_nuevo_confirm" placeholder="••••••••" {...register("password_nuevo_confirm")} />
+            {errors.password_nuevo_confirm && (
+              <p className="text-xs text-destructive">{errors.password_nuevo_confirm.message}</p>
+            )}
+          </div>
+          <Button type="submit" className="w-fit" disabled={mutation.isPending || !userId}>
+            {mutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Actualizar contraseña
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
