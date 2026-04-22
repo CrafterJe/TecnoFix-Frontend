@@ -1,5 +1,5 @@
+import React, { useState } from "react";
 import { ArrowLeft, Eye, EyeOff, KeyRound, Loader2, Mail, Shield, User as UserIcon } from "lucide-react";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
 import { ROL_LABELS } from "@/lib/helpers";
 import { cambiarPasswordPropioSchema, type CambiarPasswordPropioFormData } from "@/lib/schemas";
 import { usersApi } from "@/api/users";
@@ -99,29 +100,33 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
-function PasswordInput({ id, placeholder, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { id: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="relative">
-      <Input
-        id={id}
-        type={show ? "text" : "password"}
-        placeholder={placeholder}
-        className="pr-10"
-        {...props}
-      />
-      <button
-        type="button"
-        onClick={() => setShow((s) => !s)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-      >
-        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
-    </div>
-  );
-}
+const PasswordInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { id: string }>(
+  ({ id, placeholder, ...props }, ref) => {
+    const [show, setShow] = useState(false);
+    return (
+      <div className="relative">
+        <Input
+          id={id}
+          ref={ref}
+          type={show ? "text" : "password"}
+          placeholder={placeholder}
+          className="pr-10"
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setShow((s) => !s)}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    );
+  }
+);
 
 function ChangePasswordCard({ userId }: { userId?: number }) {
+  const setTokens = useAuthStore((s) => s.setTokens);
   const {
     register,
     handleSubmit,
@@ -134,7 +139,8 @@ function ChangePasswordCard({ userId }: { userId?: number }) {
   const mutation = useMutation({
     mutationFn: (data: CambiarPasswordPropioFormData) =>
       usersApi.cambiarPasswordPropio(userId!, data),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      setTokens({ access: res.access, refresh: res.refresh });
       toast.success("Contraseña actualizada correctamente");
       reset();
     },
