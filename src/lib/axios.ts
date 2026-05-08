@@ -38,6 +38,11 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (originalRequest.url?.includes('auth/refresh')) {
+        useAuthStore.getState().logout();
+        return Promise.reject(error);
+      }
+
       const refreshToken = useAuthStore.getState().tokens?.refresh;
 
       if (!refreshToken) {

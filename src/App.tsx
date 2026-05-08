@@ -8,25 +8,27 @@ import { isTauri } from "./lib/helpers";
 import { initUpdater } from "./tauri/updater";
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  const [splashDone, setSplashDone] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const { initializeAuth } = useAuthStore();
 
   useEffect(() => {
     const init = async () => {
-      await initializeAuth();
-      if (isTauri()) {
-        initUpdater().catch(console.error);
-      }
+      const updaterPromise = isTauri()
+        ? Promise.race([
+            initUpdater(),
+            new Promise<void>((resolve) => setTimeout(resolve, 5000)),
+          ]).catch(console.error)
+        : Promise.resolve();
+
+      await Promise.all([initializeAuth(), updaterPromise]);
+      setAuthReady(true);
     };
     init();
   }, [initializeAuth]);
 
-  const handleSplashComplete = () => {
-    setShowSplash(false);
-  };
-
-  if (showSplash) {
-    return <SplashScreen onComplete={handleSplashComplete} />;
+  if (!splashDone || !authReady) {
+    return <SplashScreen onComplete={() => setSplashDone(true)} />;
   }
 
   return (
