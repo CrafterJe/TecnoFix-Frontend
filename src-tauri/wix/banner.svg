@@ -1,11 +1,15 @@
 <svg width="493" height="58" viewBox="0 0 493 58" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="493" height="58" fill="#2D2B6E"/>
-  <rect x="0" y="0" width="4" height="58" fill="#02C5CE"/>
-  <!-- Logo pequeño -->
-  <svg x="16" y="9" width="40" height="40" viewBox="0 0 195 195" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo blanco -->
+  <rect width="493" height="58" fill="white"/>
+  <!-- Línea cian al pie -->
+  <rect x="0" y="55" width="493" height="3" fill="#02C5CE"/>
+  <!-- Separador vertical sutil -->
+  <rect x="335" y="8" width="1" height="42" fill="#C8C8D4"/>
+  <!-- Logo pequeño a la derecha -->
+  <svg x="345" y="7" width="44" height="44" viewBox="0 0 195 177" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M130.765 151.07L98.7654 175.5V45.3718H174.765L160.765 77.2806H130.765V151.07Z" fill="#02C5CE"/>
-    <path d="M53.7654 150.073L85.7654 175.001V32.4088H179.765L193.765 0.5H0.765384L14.7654 32.4088H53.7654V150.073Z" fill="white"/>
+    <path d="M53.7654 150.073L85.7654 175.001V32.4088H179.765L193.765 0.5H0.765384L14.7654 32.4088H53.7654V150.073Z" fill="#2D2B6E"/>
   </svg>
-  <text x="66" y="25" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="white">TecnoFix</text>
-  <text x="66" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#02C5CE">Sistema de gestión para taller</text>
+  <!-- TecnoFix en púrpura -->
+  <text x="396" y="34" font-family="Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#2D2B6E">TecnoFix</text>
 </svg>
