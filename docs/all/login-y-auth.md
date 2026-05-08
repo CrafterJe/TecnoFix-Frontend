@@ -32,6 +32,8 @@ El interceptor de axios en `src/lib/axios.ts` maneja el refresco automáticament
 - Si el refresco es exitoso, reintenta la petición original con el nuevo token.
 - Si el refresco falla (token expirado), hace logout y redirige al login.
 - Las peticiones que lleguen mientras se está refrescando se encolan y se reintentan juntas.
+- Si el endpoint que devuelve 401 es el propio `/auth/refresh/`, el interceptor hace
+  logout inmediato sin reintentar (evita deadlock). Ver `doc-fix-auth-deadlock-updater.md`.
 
 ## Rutas protegidas
 
