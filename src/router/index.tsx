@@ -10,6 +10,10 @@ import { OrdenDetailPage } from "@/features/ordenes/OrdenDetailPage";
 import { NuevaOrdenPage } from "@/features/ordenes/NuevaOrdenPage";
 import { InventarioPage } from "@/features/inventario/InventarioPage";
 import { CotizacionesPage } from "@/features/cotizaciones/CotizacionesPage";
+import { CotizacionesListPage } from "@/features/cotizaciones/CotizacionesListPage";
+import { NuevaCotizacionPage } from "@/features/cotizaciones/NuevaCotizacionPage";
+import { CotizacionDetailPage } from "@/features/cotizaciones/CotizacionDetailPage";
+import { ConfiguracionPage } from "@/features/cotizaciones/ConfiguracionPage";
 import { PerfilPage } from "@/features/perfil/PerfilPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { AuditoriaPage } from "@/features/auditoria/AuditoriaPage";
@@ -35,6 +39,17 @@ export const router = createBrowserRouter([
       { path: "ordenes/:id", element: <OrdenDetailPage /> },
       { path: "inventario", element: <InventarioPage /> },
       { path: "cotizaciones", element: <CotizacionesPage /> },
+      { path: "cotizaciones/lista", element: <CotizacionesListPage /> },
+      { path: "cotizaciones/nueva", element: <NuevaCotizacionPage /> },
+      {
+        path: "cotizaciones/configuracion",
+        element: (
+          <ProtectedRoute roles={["admin"]}>
+            <ConfiguracionPage />
+          </ProtectedRoute>
+        ),
+      },
+      { path: "cotizaciones/:id", element: <CotizacionDetailPage /> },
       { path: "perfil", element: <PerfilPage /> },
       {
         path: "usuarios",

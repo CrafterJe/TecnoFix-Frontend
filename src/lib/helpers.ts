@@ -33,6 +33,44 @@ export function formatCurrency(value: string | number | null): string {
   }).format(num);
 }
 
+/**
+ * Formatea una expresión de fórmula de cotización para mostrar al usuario.
+ * - "precio*2+400" → "precio × 2 + 400"
+ * - "Personalizado" / "Sin fórmula" → tal cual
+ * - vacío/null → "—"
+ */
+export function formatearFormula(expresion: string | null | undefined): string {
+  if (!expresion) return "—";
+  if (expresion === "Personalizado" || expresion === "Sin fórmula") {
+    return expresion;
+  }
+  return expresion.replace(/\*/g, " × ").replace(/\+/g, " + ");
+}
+
+/**
+ * Convierte un texto a slug URL-friendly:
+ * - lowercase
+ * - sin acentos ni diacríticos
+ * - espacios y separadores → guiones
+ * - sin caracteres especiales
+ *
+ * "Celulares/Tablets" → "celulares-tablets"
+ * "Cámara Frontal"    → "camara-frontal"
+ * "Android 14"        → "android-14"
+ */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // quita diacríticos
+    .replace(/[/\\]/g, "-") // separadores → guion
+    .replace(/[^\w\s-]/g, "") // quita caracteres no alfanuméricos
+    .trim()
+    .replace(/\s+/g, "-") // espacios → guion
+    .replace(/-+/g, "-") // colapsa guiones repetidos
+    .replace(/^-+|-+$/g, ""); // recorta guiones extremos
+}
+
 export const ESTADO_LABELS: Record<EstadoOrden, string> = {
   recibido: "Recibido",
   diagnostico: "Diagnóstico",

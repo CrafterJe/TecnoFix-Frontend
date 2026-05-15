@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronRight, Home } from "lucide-react";
+import { ArrowLeft, ChevronRight, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BreadcrumbItem {
@@ -13,11 +13,25 @@ interface Props {
   breadcrumbs?: BreadcrumbItem[];
   actions?: React.ReactNode;
   className?: string;
+  backTo?: string;
+  backLabel?: string;
 }
 
-export function PageHeader({ title, description, breadcrumbs, actions, className }: Props) {
+export function PageHeader({
+  title, description, breadcrumbs, actions, className,
+  backTo, backLabel = "Volver",
+}: Props) {
   return (
     <div className={cn("space-y-1 mb-6", className)}>
+      {backTo && (
+        <Link
+          to={backTo}
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          {backLabel}
+        </Link>
+      )}
       {breadcrumbs && breadcrumbs.length > 0 && (
         <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
           <Link to="/" className="hover:text-foreground transition-colors">
