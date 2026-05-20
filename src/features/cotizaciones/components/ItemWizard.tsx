@@ -1,16 +1,16 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ChevronRight, Search, Loader2, Smartphone, Monitor, Box,
-  Wrench, AlertCircle, ArrowLeft, Plus, Sparkles,
+  Wrench, AlertCircle, ArrowLeft, Plus, Sparkles, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cotizacionesApi } from "@/api/cotizaciones";
 import { formatCurrency, formatearFormula } from "@/lib/helpers";
 import type {
@@ -80,6 +80,33 @@ function findFormula(list: FormulaDisponible[] | undefined, id: number | null): 
   return list.find((f) => f.formula_id === id) ?? null;
 }
 
+// Hook: observa un elemento sentinel y dispara `onLoadMore` cuando entra
+// al viewport (con margen de 100px para prefetch suave). Se auto-desconecta
+// mientras hay un fetch en curso o cuando ya no hay más páginas.
+function useInfiniteScrollSentinel(opts: {
+  hasMore: boolean;
+  loading: boolean;
+  onLoadMore: () => void;
+}) {
+  const { hasMore, loading, onLoadMore } = opts;
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !hasMore || loading) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) onLoadMore();
+      },
+      { rootMargin: "100px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasMore, loading, onLoadMore]);
+
+  return ref;
+}
+
 const CATEGORIA_ICONS: Record<string, React.ReactNode> = {
   celular: <Smartphone className="h-6 w-6" />,
   computadora: <Monitor className="h-6 w-6" />,
@@ -100,6 +127,13 @@ export function ItemWizard({ cotizacionId, cotizacionQueryKey }: ItemWizardProps
     const t = setTimeout(() => setDebouncedGlobalQuery(s.globalSearchQuery), 300);
     return () => clearTimeout(t);
   }, [s.globalSearchQuery]);
+
+  // Debounce búsqueda por fuente (300ms) — paridad con búsqueda global
+  const [debouncedBusquedaQuery, setDebouncedBusquedaQuery] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedBusquedaQuery(s.busquedaQuery), 300);
+    return () => clearTimeout(t);
+  }, [s.busquedaQuery]);
 
   function update(partial: Partial<WizardState>) {
     setS((prev) => ({ ...prev, ...partial }));
@@ -271,21 +305,35 @@ export function ItemWizard({ cotizacionId, cotizacionQueryKey }: ItemWizardProps
     staleTime: 0,
   });
 
-  const { data: productosResult, isLoading: loadingProductos } = useQuery({
+  const productosInfinite = useInfiniteQuery({
     queryKey: [
       "cotizaciones",
       "productos",
       s.fuenteApi?.id,
-      s.busquedaQuery,
+      debouncedBusquedaQuery,
     ],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       cotizacionesApi.productosApi.list({
-        q: s.busquedaQuery || undefined,
+        q: debouncedBusquedaQuery || undefined,
         fuente: s.fuenteApi?.id, // backend acepta id o slug
-        page_size: 20,
+        page: pageParam,
+        page_size: 30,
       }),
-    enabled: s.step === "busqueda" && !!s.fuenteApi && s.busquedaQuery.length >= 2,
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.next ? last.current_page + 1 : undefined),
+    enabled:
+      s.step === "busqueda" &&
+      !!s.fuenteApi &&
+      debouncedBusquedaQuery.length >= 2,
     staleTime: 30_000,
+  });
+  const productosItems =
+    productosInfinite.data?.pages.flatMap((p) => p.results) ?? [];
+  const productosTotal = productosInfinite.data?.pages[0]?.count ?? 0;
+  const productosSentinelRef = useInfiniteScrollSentinel({
+    hasMore: !!productosInfinite.hasNextPage,
+    loading: productosInfinite.isFetchingNextPage,
+    onLoadMore: productosInfinite.fetchNextPage,
   });
 
   // Fuentes API dinámicas (para el step "fuente")
@@ -329,15 +377,26 @@ export function ItemWizard({ cotizacionId, cotizacionQueryKey }: ItemWizardProps
   })();
 
   // Búsqueda global (todas las APIs, sin filtro de fuente)
-  const { data: globalResults, isLoading: loadingGlobal } = useQuery({
+  const globalInfinite = useInfiniteQuery({
     queryKey: ["cotizaciones", "productos-global", debouncedGlobalQuery],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       cotizacionesApi.productosApi.list({
         q: debouncedGlobalQuery,
-        page_size: 20,
+        page: pageParam,
+        page_size: 30,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.next ? last.current_page + 1 : undefined),
     enabled: s.step === "global" && debouncedGlobalQuery.length >= 2,
     staleTime: 30_000,
+  });
+  const globalItems =
+    globalInfinite.data?.pages.flatMap((p) => p.results) ?? [];
+  const globalTotal = globalInfinite.data?.pages[0]?.count ?? 0;
+  const globalSentinelRef = useInfiniteScrollSentinel({
+    hasMore: !!globalInfinite.hasNextPage,
+    loading: globalInfinite.isFetchingNextPage,
+    onLoadMore: globalInfinite.fetchNextPage,
   });
 
   const addItem = useMutation({
@@ -439,46 +498,36 @@ export function ItemWizard({ cotizacionId, cotizacionQueryKey }: ItemWizardProps
           <p className="text-xs text-muted-foreground text-center py-4">
             Escribe al menos 2 caracteres para buscar
           </p>
-        ) : loadingGlobal || debouncedGlobalQuery !== s.globalSearchQuery ? (
+        ) : globalInfinite.isLoading || debouncedGlobalQuery !== s.globalSearchQuery ? (
           <div className="flex justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
+        ) : globalItems.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-6">
+            No se encontraron productos en ningún catálogo
+          </p>
         ) : (
-          <ScrollArea className="max-h-72">
-            <div className="space-y-1">
-              {globalResults?.results.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-6">
-                  No se encontraron productos en ningún catálogo
-                </p>
-              ) : (
-                globalResults?.results.map((prod) => (
-                  <button
-                    key={prod.id}
-                    onClick={() => selectFromGlobal(prod)}
-                    className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-accent/50 text-left transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{prod.titulo}</p>
-                      <p className="text-[11px] text-muted-foreground">{prod.vendor}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs font-semibold tabular-nums">
-                        {formatCurrency(prod.precio)}
-                      </span>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {prod.fuente.nombre}
-                      </Badge>
-                      {!prod.disponible && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-500/10 text-orange-400 border-orange-500/30">
-                          Sin stock
-                        </Badge>
-                      )}
-                    </div>
-                  </button>
-                ))
-              )}
+          <>
+            <p className="text-[11px] text-muted-foreground">
+              Mostrando {globalItems.length} de {globalTotal}
+            </p>
+            <div className="max-h-72 overflow-y-auto pr-1 space-y-1 rounded-md border border-border/40">
+              {globalItems.map((prod) => (
+                <ProductoRow
+                  key={prod.id}
+                  prod={prod}
+                  onSelect={() => selectFromGlobal(prod)}
+                  showFuente
+                />
+              ))}
+              <InfiniteScrollFooter
+                hasMore={!!globalInfinite.hasNextPage}
+                loading={globalInfinite.isFetchingNextPage}
+                itemsCount={globalItems.length}
+                sentinelRef={globalSentinelRef}
+              />
             </div>
-          </ScrollArea>
+          </>
         )}
 
         <div className="flex items-center gap-3 pt-2">
@@ -630,43 +679,35 @@ export function ItemWizard({ cotizacionId, cotizacionQueryKey }: ItemWizardProps
           <p className="text-xs text-muted-foreground text-center py-4">
             Escribe al menos 2 caracteres para buscar
           </p>
-        ) : loadingProductos ? (
+        ) : productosInfinite.isLoading || debouncedBusquedaQuery !== s.busquedaQuery ? (
           <div className="flex justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
+        ) : productosItems.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-6">
+            No se encontraron productos
+          </p>
         ) : (
-          <ScrollArea className="max-h-72">
-            <div className="space-y-1">
-              {productosResult?.results.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-6">
-                  No se encontraron productos
-                </p>
-              ) : (
-                productosResult?.results.map((prod) => (
-                  <button
-                    key={prod.id}
-                    onClick={() => selectProducto(prod)}
-                    className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-accent/50 text-left transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{prod.titulo}</p>
-                      <p className="text-[11px] text-muted-foreground">{prod.vendor}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs font-semibold tabular-nums">
-                        {formatCurrency(prod.precio)}
-                      </span>
-                      {!prod.disponible && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-500/10 text-orange-400 border-orange-500/30">
-                          Sin stock
-                        </Badge>
-                      )}
-                    </div>
-                  </button>
-                ))
-              )}
+          <>
+            <p className="text-[11px] text-muted-foreground">
+              Mostrando {productosItems.length} de {productosTotal}
+            </p>
+            <div className="max-h-72 overflow-y-auto pr-1 space-y-1 rounded-md border border-border/40">
+              {productosItems.map((prod) => (
+                <ProductoRow
+                  key={prod.id}
+                  prod={prod}
+                  onSelect={() => selectProducto(prod)}
+                />
+              ))}
+              <InfiniteScrollFooter
+                hasMore={!!productosInfinite.hasNextPage}
+                loading={productosInfinite.isFetchingNextPage}
+                itemsCount={productosItems.length}
+                sentinelRef={productosSentinelRef}
+              />
             </div>
-          </ScrollArea>
+          </>
         )}
       </div>
     );
@@ -1080,5 +1121,98 @@ function InfoRow({
         {value}
       </span>
     </div>
+  );
+}
+
+function ProductoRow({
+  prod,
+  onSelect,
+  showFuente,
+}: {
+  prod: ProductoApi;
+  onSelect: () => void;
+  showFuente?: boolean;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className="w-full flex items-center justify-between gap-3 p-3 rounded-lg hover:bg-accent/50 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+    >
+      <div className="flex-1 min-w-0">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <p className="text-xs font-medium truncate cursor-default">{prod.titulo}</p>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="start" className="max-w-md text-xs">
+            {prod.titulo}
+          </TooltipContent>
+        </Tooltip>
+        <p className="text-[11px] text-muted-foreground truncate">{prod.vendor}</p>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="text-xs font-semibold tabular-nums">
+          {formatCurrency(prod.precio)}
+        </span>
+        {showFuente && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            {prod.fuente.nombre}
+          </Badge>
+        )}
+        {!prod.disponible && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-orange-500/10 text-orange-400 border-orange-500/30">
+            Sin stock
+          </Badge>
+        )}
+        {prod.url_producto && (
+          <a
+            href={prod.url_producto}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="Ver en el sitio del proveedor"
+            aria-label="Ver en el sitio del proveedor"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfiniteScrollFooter({
+  hasMore,
+  loading,
+  itemsCount,
+  sentinelRef,
+}: {
+  hasMore: boolean;
+  loading: boolean;
+  itemsCount: number;
+  sentinelRef: React.MutableRefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <>
+      {hasMore && <div ref={sentinelRef} className="h-1" aria-hidden="true" />}
+      {loading && (
+        <div className="flex justify-center py-3">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      {!hasMore && itemsCount > 0 && (
+        <p className="text-[11px] text-muted-foreground text-center py-3">
+          No hay más resultados
+        </p>
+      )}
+    </>
   );
 }
