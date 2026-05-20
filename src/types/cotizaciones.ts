@@ -78,13 +78,14 @@ export interface FuenteApiRef {
 export interface ProductoApi {
   id: number;
   fuente: FuenteApiRef;
-  producto_id_externo: number;
+  producto_id_externo: string;
   titulo: string;
   precio: string;
   disponible: boolean;
   handle: string;
   vendor: string;
   product_type: string;
+  url_producto: string;
   synced_at: string;
 }
 
