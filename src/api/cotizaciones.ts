@@ -10,6 +10,8 @@ import type {
   FuenteApi,
   ProductoApi, ProductoApiFilters, ResolverFormulaResponse,
   EstadoCotizacion, PaginatedResponse,
+  AutorizarCotizacionPayload, AutorizarCotizacionResponse,
+  ReportarCancelacionPayload,
 } from "@/types";
 
 function extractList<T>(data: unknown): T[] {
@@ -48,6 +50,22 @@ export const cotizacionesApi = {
   cambiarEstado: (id: number, estado: EstadoCotizacion) =>
     apiClient
       .post<Cotizacion>(ENDPOINTS.cotizaciones.cambiarEstado(id), { estado })
+      .then((r) => r.data),
+
+  autorizar: (id: number, payload: AutorizarCotizacionPayload) =>
+    apiClient
+      .post<AutorizarCotizacionResponse>(
+        ENDPOINTS.cotizaciones.autorizar(id),
+        payload,
+      )
+      .then((r) => r.data),
+
+  reportarCancelacion: (id: number, payload: ReportarCancelacionPayload) =>
+    apiClient
+      .post<Cotizacion>(
+        ENDPOINTS.cotizaciones.reportarCancelacion(id),
+        payload,
+      )
       .then((r) => r.data),
 
   items: {
@@ -191,15 +209,14 @@ export const cotizacionesApi = {
       .get<ResolverFormulaResponse>(ENDPOINTS.cotizaciones.resolverFormula, { params })
       .then((r) => r.data),
 
-  pdf: async (id: number, tipo: "cliente" | "empresa") => {
+  // Descarga los bytes del PDF. El caller decide qué hacer con el blob
+  // (mostrar en visor in-app, guardar con dialog, etc.).
+  pdf: async (id: number, tipo: "cliente" | "empresa"): Promise<Blob> => {
     const endpoint =
       tipo === "cliente"
         ? ENDPOINTS.cotizaciones.pdfCliente(id)
         : ENDPOINTS.cotizaciones.pdfEmpresa(id);
     const response = await apiClient.get(endpoint, { responseType: "blob" });
-    const blob = new Blob([response.data], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    return new Blob([response.data], { type: "application/pdf" });
   },
 };

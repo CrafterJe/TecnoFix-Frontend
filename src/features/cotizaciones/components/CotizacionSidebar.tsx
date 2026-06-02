@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Trash2, FileDown, CheckCircle, XCircle, Loader2, Plus, FileText, List,
+  ShieldCheck, ExternalLink, Ban,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,17 +17,59 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { cotizacionesApi } from "@/api/cotizaciones";
 import { useAuthStore } from "@/store/authStore";
 import { formatCurrency } from "@/lib/helpers";
-import type { Cotizacion, EstadoCotizacion } from "@/types";
+import type {
+  AutorizarCotizacionPayload,
+  AutorizarErrorResponse,
+  Cotizacion,
+  EstadoCotizacion,
+} from "@/types";
+import { AutorizarCotizacionDialog } from "./AutorizarCotizacionDialog";
+import {
+  CancelarCotizacionDialog,
+  type CancelarCotizacionPayload,
+} from "./CancelarCotizacionDialog";
+import { PdfPreviewDialog } from "./PdfPreviewDialog";
+
+function extractErrorDetail(e: unknown): string | undefined {
+  const data = (e as { response?: { data?: { detail?: string } } })?.response?.data;
+  return data?.detail;
+}
+
+function extractAutorizarError(e: unknown): AutorizarErrorResponse | undefined {
+  const data = (e as { response?: { data?: AutorizarErrorResponse } })?.response?.data;
+  if (data && typeof data === "object" && "code" in data) return data;
+  return undefined;
+}
+
+// Convierte el body 400 de DRF (errores por campo) en un string legible.
+// Soporta estructuras anidadas (cliente.nombre, dispositivo.imei, etc.)
+function formatDrfErrors(data: Record<string, unknown>, prefix = ""): string {
+  const lines: string[] = [];
+  for (const [key, value] of Object.entries(data)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (Array.isArray(value)) {
+      lines.push(`${path}: ${value.join(", ")}`);
+    } else if (value && typeof value === "object") {
+      const nested = formatDrfErrors(value as Record<string, unknown>, path);
+      if (nested) lines.push(nested);
+    } else if (typeof value === "string") {
+      lines.push(`${path}: ${value}`);
+    }
+  }
+  return lines.join(" · ");
+}
 
 const ESTADO_LABELS: Record<EstadoCotizacion, string> = {
   borrador: "Borrador",
   finalizada: "Finalizada",
+  autorizada: "Autorizada",
   cancelada: "Cancelada",
 };
 
 const ESTADO_COLORS: Record<EstadoCotizacion, string> = {
   borrador: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
   finalizada: "bg-green-500/20 text-green-400 border-green-500/30",
+  autorizada: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   cancelada: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
@@ -46,11 +89,21 @@ export function CotizacionSidebar({
   const qc = useQueryClient();
   const navigate = useNavigate();
   const isBorrador = cotizacion.estado === "borrador";
+  const isFinalizada = cotizacion.estado === "finalizada";
+  const isAutorizada = cotizacion.estado === "autorizada";
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.rol === "admin";
   const [pdfLoading, setPdfLoading] = useState<"cliente" | "empresa" | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<{
+    open: boolean;
+    blob: Blob | null;
+    title: string;
+    fileName: string;
+  }>({ open: false, blob: null, title: "", fileName: "" });
   const [confirmDel, setConfirmDel] = useState(false);
   const [postChangeModal, setPostChangeModal] = useState<EstadoCotizacion | null>(null);
+  const [autorizarOpen, setAutorizarOpen] = useState(false);
+  const [cancelarOpen, setCancelarOpen] = useState(false);
 
   const removeItem = useMutation({
     mutationFn: (itemId: number) => cotizacionesApi.items.remove(cotizacion.id, itemId),
@@ -75,7 +128,9 @@ export function CotizacionSidebar({
         setPostChangeModal(updated.estado);
       }
     },
-    onError: () => toast.error("No se pudo cambiar el estado"),
+    onError: (e: unknown) => {
+      toast.error(extractErrorDetail(e) || "No se pudo cambiar el estado");
+    },
   });
 
   const deleteCotizacion = useMutation({
@@ -92,10 +147,113 @@ export function CotizacionSidebar({
     },
   });
 
+  const autorizarMutation = useMutation({
+    mutationFn: (payload: AutorizarCotizacionPayload) =>
+      cotizacionesApi.autorizar(cotizacion.id, payload),
+    onSuccess: ({ cotizacion: updated, orden }) => {
+      qc.setQueryData(queryKey, updated);
+      qc.invalidateQueries({ queryKey: ["cotizaciones"] });
+      qc.invalidateQueries({ queryKey: ["ordenes"] });
+      qc.invalidateQueries({ queryKey: ["inventario"] });
+      setAutorizarOpen(false);
+
+      // Compone una descripción combinada con info de adelanto y refacciones procesadas.
+      const partes: string[] = [];
+      if (orden.adelanto_calculo) {
+        partes.push(
+          `Adelanto: ${formatCurrency(orden.adelanto_calculo.precio_piezas_total)} (${orden.adelanto_calculo.items_considerados} items)`,
+        );
+      }
+      if (orden.refacciones_procesadas && orden.refacciones_procesadas.length > 0) {
+        const creadas = orden.refacciones_procesadas.filter((r) => r.creada).length;
+        const reusadas = orden.refacciones_procesadas.length - creadas;
+        const refsTxt: string[] = [];
+        if (creadas) refsTxt.push(`${creadas} nueva${creadas !== 1 ? "s" : ""}`);
+        if (reusadas) refsTxt.push(`${reusadas} actualizada${reusadas !== 1 ? "s" : ""}`);
+        partes.push(`Refacciones: ${refsTxt.join(" · ")}`);
+      }
+
+      toast.success(`Orden ${orden.numero_orden} creada`, {
+        description: partes.length > 0 ? partes.join(" · ") : undefined,
+      });
+      navigate(`/ordenes/${orden.id}`);
+    },
+    onError: (e: unknown) => {
+      const responseData = (e as { response?: { data?: unknown } })?.response?.data;
+      console.error("[autorizar] backend response:", responseData);
+
+      const err = extractAutorizarError(e);
+
+      if (err?.code === "stock_insuficiente" && err.refacciones_faltantes) {
+        const lista = err.refacciones_faltantes
+          .map((r) => `${r.refaccion_nombre}: ${r.stock_actual}/${r.stock_requerido}`)
+          .join(" · ");
+        toast.error("Stock insuficiente para autorizar", {
+          description: `Ajusta el stock en inventario antes de reintentar. Faltantes: ${lista}`,
+          duration: 12000,
+        });
+        return;
+      }
+
+      if (err?.code === "adelanto_precio_piezas_mismatch") {
+        toast.error("El monto de adelanto no coincide con el costo de piezas", {
+          description: `Esperado: ${formatCurrency(err.monto_esperado || "0")} · Recibido: ${formatCurrency(err.monto_recibido || "0")}`,
+        });
+        return;
+      }
+      if (err?.code) {
+        toast.error(err.detail);
+        return;
+      }
+
+      // 400: el body trae errores por campo en formato DRF. Mostrar el primero.
+      if (responseData && typeof responseData === "object") {
+        const formatted = formatDrfErrors(responseData as Record<string, unknown>);
+        if (formatted) {
+          toast.error("Datos inválidos", { description: formatted });
+          return;
+        }
+      }
+      toast.error(extractErrorDetail(e) || "No se pudo autorizar la cotización");
+    },
+  });
+
+  const cancelarMutation = useMutation({
+    mutationFn: (payload: CancelarCotizacionPayload) =>
+      cotizacionesApi.reportarCancelacion(cotizacion.id, {
+        razon: payload.razon,
+        notas: payload.notas,
+      }),
+    onSuccess: (updated) => {
+      qc.setQueryData(queryKey, updated);
+      qc.invalidateQueries({ queryKey: ["cotizaciones"] });
+      setCancelarOpen(false);
+      toast.success("Cancelación registrada");
+    },
+    onError: (e: unknown) => {
+      toast.error(extractErrorDetail(e) || "No se pudo registrar la cancelación");
+    },
+  });
+
+  function handleAutorizar(payload: AutorizarCotizacionPayload) {
+    autorizarMutation.mutate(payload);
+  }
+
+  function handleCancelar(payload: CancelarCotizacionPayload) {
+    cancelarMutation.mutate(payload);
+  }
+
   async function downloadPdf(tipo: "cliente" | "empresa") {
     setPdfLoading(tipo);
     try {
-      await cotizacionesApi.pdf(cotizacion.id, tipo);
+      const blob = await cotizacionesApi.pdf(cotizacion.id, tipo);
+      const sufijo = tipo === "cliente" ? "cliente" : "empresa";
+      setPdfPreview({
+        open: true,
+        blob,
+        title: `${cotizacion.numero_cotizacion} — PDF ${sufijo}`,
+        fileName: `${cotizacion.numero_cotizacion}-${sufijo}.pdf`,
+      });
     } catch {
       toast.error("No se pudo generar el PDF");
     } finally {
@@ -235,6 +393,51 @@ export function CotizacionSidebar({
           </Button>
         </div>
 
+        {(isFinalizada || isAutorizada) && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                Orden
+              </p>
+              {isFinalizada && (
+                <>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    size="sm"
+                    onClick={() => setAutorizarOpen(true)}
+                    disabled={cotizacion.items.length === 0}
+                    title={cotizacion.items.length === 0 ? "Agrega items primero" : undefined}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 mr-2" />
+                    Autorizar cotización
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                    onClick={() => setCancelarOpen(true)}
+                  >
+                    <Ban className="h-3.5 w-3.5 mr-2" />
+                    Reportar cancelación
+                  </Button>
+                </>
+              )}
+              {isAutorizada && cotizacion.orden_vinculada && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  size="sm"
+                  onClick={() => navigate(`/ordenes/${cotizacion.orden_vinculada!.id}`)}
+                >
+                  <ExternalLink className="h-3.5 w-3.5 mr-2" />
+                  Ver orden {cotizacion.orden_vinculada.numero_orden}
+                </Button>
+              )}
+            </div>
+          </>
+        )}
+
         {allowDelete && isAdmin && (
           <>
             <Separator />
@@ -251,6 +454,32 @@ export function CotizacionSidebar({
           </>
         )}
       </div>
+
+      <AutorizarCotizacionDialog
+        open={autorizarOpen}
+        onOpenChange={setAutorizarOpen}
+        cotizacion={cotizacion}
+        onAutorizado={handleAutorizar}
+        isPending={autorizarMutation.isPending}
+      />
+
+      <CancelarCotizacionDialog
+        open={cancelarOpen}
+        onOpenChange={setCancelarOpen}
+        numeroCotizacion={cotizacion.numero_cotizacion}
+        onCancelado={handleCancelar}
+        isPending={cancelarMutation.isPending}
+      />
+
+      <PdfPreviewDialog
+        open={pdfPreview.open}
+        onOpenChange={(open) =>
+          setPdfPreview((prev) => ({ ...prev, open }))
+        }
+        title={pdfPreview.title}
+        fileName={pdfPreview.fileName}
+        blob={pdfPreview.blob}
+      />
 
       <ConfirmDialog
         open={confirmDel}

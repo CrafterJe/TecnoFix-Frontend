@@ -11,6 +11,13 @@ export type EstadoOrden =
   | "listo"
   | "entregado";
 
+export type AdelantoTipoOrden = "ninguno" | "personalizado" | "precio_piezas";
+
+export interface OrdenCotizacionRef {
+  id: number;
+  numero_cotizacion: string;
+}
+
 export interface Orden {
   id: number;
   numero_orden: string;
@@ -26,6 +33,18 @@ export interface Orden {
   delivered_by: User | null;
   created_at: string;
   updated_at: string;
+  // Campos agregados por el flujo de autorización de cotización.
+  cotizacion?: OrdenCotizacionRef | null;
+  numero_serie?: string;
+  imei?: string;
+  detalles_tiene?: boolean;
+  detalles_descripcion?: string;
+  adelanto_tipo?: AdelantoTipoOrden;
+  adelanto_tipo_display?: string;
+  adelanto_monto?: string | null;
+  // Lista anidada de refacciones vinculadas a la orden. El backend debe
+  // exponerla en el GET (DRF nested serializer o source="ordenrefaccion_set").
+  refacciones?: OrdenRefaccion[];
 }
 
 export interface OrdenPayload {
@@ -61,7 +80,12 @@ export interface OrdenRefaccion {
   id: number;
   orden: number;
   refaccion: Refaccion;
+  // Atajos por compatibilidad: cuando solo se necesita el id/nombre sin entrar al objeto.
+  refaccion_id: number;
+  refaccion_nombre: string;
   cantidad: number;
   added_by: User | null;
+  added_by_nombre: string | null;
+  created_at: string;
 }
 
