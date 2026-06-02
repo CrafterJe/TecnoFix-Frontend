@@ -14,6 +14,7 @@ import { CotizacionesListPage } from "@/features/cotizaciones/CotizacionesListPa
 import { NuevaCotizacionPage } from "@/features/cotizaciones/NuevaCotizacionPage";
 import { CotizacionDetailPage } from "@/features/cotizaciones/CotizacionDetailPage";
 import { ConfiguracionPage } from "@/features/cotizaciones/ConfiguracionPage";
+import { CrearPublicacionPage } from "@/features/publicaciones/CrearPublicacionPage";
 import { PerfilPage } from "@/features/perfil/PerfilPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { AuditoriaPage } from "@/features/auditoria/AuditoriaPage";
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
         ),
       },
       { path: "cotizaciones/:id", element: <CotizacionDetailPage /> },
+      { path: "publicaciones", element: <CrearPublicacionPage /> },
       { path: "perfil", element: <PerfilPage /> },
       {
         path: "usuarios",

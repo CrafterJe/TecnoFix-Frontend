@@ -72,4 +72,7 @@ export const ENDPOINTS = {
     productosApi: "/cotizaciones/productos-api/",
     resolverFormula: "/cotizaciones/resolver-formula/",
   },
+  publicaciones: {
+    exportarPng: "/publicaciones/exportar-png/",
+  },
 };
