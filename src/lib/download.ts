@@ -31,7 +31,7 @@ async function saveBlobInTauri(
   const { save } = await import("@tauri-apps/plugin-dialog");
   const { writeFile } = await import("@tauri-apps/plugin-fs");
   const { downloadDir } = await import("@tauri-apps/api/path");
-  const { openPath } = await import("@tauri-apps/plugin-opener");
+  const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
 
   let defaultPath = fileName;
   try {
@@ -58,11 +58,11 @@ async function saveBlobInTauri(
   toast.success("Archivo guardado", {
     description: filePath,
     action: {
-      label: "Abrir",
+      label: "Ver en carpeta",
       onClick: () => {
-        openPath(filePath).catch((e) => {
-          console.error("[download] no se pudo abrir:", e);
-          toast.error("No se pudo abrir el archivo");
+        revealItemInDir(filePath).catch((e) => {
+          console.error("[download] no se pudo abrir la carpeta:", e);
+          toast.error("No se pudo abrir la carpeta del archivo");
         });
       },
     },
