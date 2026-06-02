@@ -87,9 +87,11 @@ El módulo original (Node + Puppeteer) se reparte así:
    `POST /preview`), `renderDesign` corre en el navegador. Solo se diferiere
    250 ms el `srcDoc` para no recargar las Google Fonts del iframe en cada tecla.
 3. **Descarga reutilizable**: `saveBlob` extrae el patrón ya probado en
-   `PdfPreviewDialog` (diálogo nativo en Tauri + toast "Abrir", `<a download>` en
-   web). No requiere permisos nuevos: las capabilities de `plugin-fs`,
-   `plugin-dialog` y `plugin-opener` ya están configuradas.
+   `PdfPreviewDialog` (diálogo nativo en Tauri + toast "Ver en carpeta",
+   `<a download>` en web). En Tauri/Windows el toast usa `revealItemInDir` para
+   abrir el Explorador con el PNG seleccionado (más fiable que `openPath`, que
+   depende de la app por defecto y del scope de `open_path`). Requiere el permiso
+   `opener:allow-reveal-item-in-dir` en las capabilities.
 4. **Contrato compartido**: el objeto `DisenoPublicacion` es idéntico al "design"
    del proyecto original, para que el preview del front y el render del back
    produzcan exactamente el mismo resultado.
