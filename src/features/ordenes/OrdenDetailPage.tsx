@@ -1,15 +1,17 @@
 import { useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Wrench, User, Calendar, DollarSign, ImagePlus, Trash2, Plus,
+  ClipboardList, Wallet, FileText, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -127,6 +129,11 @@ export function OrdenDetailPage() {
     mutationFn: () => ordenesApi.delete(ordenId),
     onSuccess: () => {
       toast.success("Orden eliminada");
+      // refetchType:"none" → marca como stale SIN disparar refetch inmediato.
+      // Evita que la query del detalle (aún con observer activo antes de
+      // desmontar) intente hacer GET de una orden ya eliminada (404).
+      // La lista se refrescará automáticamente al montarse porque verá data stale.
+      qc.invalidateQueries({ queryKey: ["ordenes"], refetchType: "none" });
       navigate("/ordenes");
     },
     onError: () => toast.error("Error al eliminar"),
@@ -149,7 +156,22 @@ export function OrdenDetailPage() {
         title={orden.numero_orden}
         breadcrumbs={[{ label: "Órdenes", href: "/ordenes" }, { label: orden.numero_orden }]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {orden.cotizacion && (
+              <Link
+                to={`/cotizaciones/${orden.cotizacion.id}`}
+                className="inline-flex"
+              >
+                <Badge
+                  variant="outline"
+                  className="bg-cyan-500/15 text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/25 transition-colors gap-1"
+                >
+                  <FileText className="h-3 w-3" />
+                  Originada de {orden.cotizacion.numero_cotizacion}
+                  <ExternalLink className="h-3 w-3" />
+                </Badge>
+              </Link>
+            )}
             {isAdmin && (
               <Button
                 variant="destructive"
@@ -173,12 +195,26 @@ export function OrdenDetailPage() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-start gap-3">
               <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-              <div>
+              <div className="space-y-0.5">
                 <p className="font-medium">{orden.dispositivo?.cliente?.nombre}</p>
                 <p className="text-muted-foreground">
                   {TIPO_DISPOSITIVO_LABELS[orden.dispositivo?.tipo]} —{" "}
                   {orden.dispositivo?.marca} {orden.dispositivo?.modelo}
                 </p>
+                {(orden.numero_serie || orden.imei) && (
+                  <div className="text-[11px] text-muted-foreground space-y-0.5 pt-0.5">
+                    {orden.numero_serie && (
+                      <p>
+                        S/N: <span className="font-mono text-foreground">{orden.numero_serie}</span>
+                      </p>
+                    )}
+                    {orden.imei && (
+                      <p>
+                        IMEI: <span className="font-mono text-foreground">{orden.imei}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -287,39 +323,131 @@ export function OrdenDetailPage() {
         </Card>
       </div>
 
+      {/* Detalles físicos + Adelanto (solo si la orden trae estos datos del flujo de autorización) */}
+      {(orden.detalles_tiene !== undefined || orden.adelanto_tipo) && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {orden.detalles_tiene !== undefined && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                  Detalles físicos del equipo
+                  {!orden.detalles_tiene && (
+                    <Badge variant="outline" className="text-[10px] bg-muted/50 ml-auto">
+                      Sin detalles
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {orden.detalles_tiene && orden.detalles_descripcion ? (
+                  <p className="text-sm whitespace-pre-wrap">{orden.detalles_descripcion}</p>
+                ) : (
+                  <p className="text-sm italic text-muted-foreground">
+                    El equipo se recibió sin observaciones aparentes.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {orden.adelanto_tipo && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                  Adelanto del cliente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  {orden.adelanto_tipo_display || orden.adelanto_tipo}
+                </p>
+                {orden.adelanto_monto ? (
+                  <p className="text-2xl font-bold tabular-nums text-green-400">
+                    {formatCurrency(orden.adelanto_monto)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* Refacciones */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Refacciones utilizadas</CardTitle>
+          {orden.cotizacion && (
+            <p className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              Refacciones iniciales agregadas automáticamente desde la cotización {orden.cotizacion.numero_cotizacion}.
+            </p>
+          )}
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex gap-2">
-            <Select value={refaccionId} onValueChange={setRefaccionId}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Selecciona una refacción" />
-              </SelectTrigger>
-              <SelectContent>
-                {refacciones?.results.map((r) => (
-                  <SelectItem key={r.id} value={r.id.toString()}>
-                    {r.nombre} (stock: {r.stock})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              type="number"
-              min="1"
-              value={refaccionQty}
-              onChange={(e) => setRefaccionQty(e.target.value)}
-              className="w-20"
-            />
-            <Button
-              size="sm"
-              onClick={() => agregarRefaccionMutation.mutate()}
-              disabled={!refaccionId || agregarRefaccionMutation.isPending}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+        <CardContent className="space-y-4">
+          {/* Lista de refacciones ya vinculadas a la orden */}
+          {orden.refacciones && orden.refacciones.length > 0 ? (
+            <div className="space-y-2">
+              {orden.refacciones.map((or) => (
+                <div
+                  key={or.id}
+                  className="flex items-center justify-between gap-3 border rounded-md p-2.5 bg-muted/20"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{or.refaccion.nombre}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Stock actual: {or.refaccion.stock}
+                      {or.added_by && ` · Agregada por ${or.added_by.nombre}`}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="tabular-nums flex-shrink-0">
+                    ×{or.cantidad}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              Sin refacciones registradas todavía.
+            </p>
+          )}
+
+          <Separator />
+
+          {/* Agregar nueva manualmente */}
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Agregar refacción manualmente</p>
+            <div className="flex gap-2">
+              <Select value={refaccionId} onValueChange={setRefaccionId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selecciona una refacción" />
+                </SelectTrigger>
+                <SelectContent>
+                  {refacciones?.results.map((r) => (
+                    <SelectItem key={r.id} value={r.id.toString()}>
+                      {r.nombre} (stock: {r.stock})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min="1"
+                value={refaccionQty}
+                onChange={(e) => setRefaccionQty(e.target.value)}
+                className="w-20"
+              />
+              <Button
+                size="sm"
+                onClick={() => agregarRefaccionMutation.mutate()}
+                disabled={!refaccionId || agregarRefaccionMutation.isPending}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

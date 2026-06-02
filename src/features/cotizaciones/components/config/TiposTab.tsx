@@ -45,6 +45,7 @@ const tipoSchema = z.object({
   nombre: z.string().min(1, "Requerido"),
   categoria: z.coerce.number().int().positive("Selecciona una categoría"),
   activo: z.boolean().default(true),
+  es_servicio: z.boolean().default(false),
 });
 
 type TipoFormData = z.infer<typeof tipoSchema>;
@@ -190,6 +191,14 @@ export function TiposTab() {
                                   Inactivo
                                 </Badge>
                               )}
+                              {tipo.es_servicio && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0 bg-slate-500/15 text-slate-300 border-slate-500/30"
+                                >
+                                  Servicio
+                                </Badge>
+                              )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {tipo.categoria_nombre} · {tipo.formulas.length} fórmula
@@ -275,8 +284,9 @@ function TipoDialog({
           nombre: editing.nombre,
           categoria: editing.categoria,
           activo: editing.activo,
+          es_servicio: editing.es_servicio ?? false,
         }
-      : { nombre: "", categoria: 0, activo: true },
+      : { nombre: "", categoria: 0, activo: true, es_servicio: false },
   });
 
   const mutation = useMutation({
@@ -286,6 +296,7 @@ function TipoDialog({
           nombre: data.nombre,
           categoria: data.categoria,
           activo: data.activo,
+          es_servicio: data.es_servicio,
         };
         return cotizacionesApi.tiposReparacion.update(editing!.id, payload);
       }
@@ -293,6 +304,7 @@ function TipoDialog({
       const payload: TipoReparacionPayload = {
         nombre: data.nombre,
         categoria: data.categoria,
+        es_servicio: data.es_servicio,
       };
       return cotizacionesApi.tiposReparacion.create(payload);
     },
@@ -340,6 +352,23 @@ function TipoDialog({
                   </SelectContent>
                 </Select>
                 <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="es_servicio" render={({ field }) => (
+              <FormItem className="flex items-start gap-3 space-y-0">
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-0.5"
+                  />
+                </FormControl>
+                <div className="space-y-0.5">
+                  <FormLabel className="!mt-0">Es servicio</FormLabel>
+                  <p className="text-[11px] text-muted-foreground">
+                    Marca esto si no es una pieza física (mano de obra, liberación, calibración). Los items con este tipo no se agregan al inventario al autorizar la cotización.
+                  </p>
+                </div>
               </FormItem>
             )} />
             {isEdit && (

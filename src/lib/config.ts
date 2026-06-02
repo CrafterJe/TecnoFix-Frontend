@@ -52,6 +52,8 @@ export const ENDPOINTS = {
     items: (id: number) => `/cotizaciones/${id}/items/`,
     itemDetail: (id: number, itemId: number) => `/cotizaciones/${id}/items/${itemId}/`,
     cambiarEstado: (id: number) => `/cotizaciones/${id}/cambiar-estado/`,
+    autorizar: (id: number) => `/cotizaciones/${id}/autorizar/`,
+    reportarCancelacion: (id: number) => `/cotizaciones/${id}/reportar-cancelacion/`,
     pdfCliente: (id: number) => `/cotizaciones/${id}/pdf-cliente/`,
     pdfEmpresa: (id: number) => `/cotizaciones/${id}/pdf-empresa/`,
     categorias: "/cotizaciones/categorias/",
