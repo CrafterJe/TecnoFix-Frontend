@@ -6,3 +6,4 @@ export * from "./orden";
 export * from "./inventario";
 export * from "./auditoria";
 export * from "./cotizaciones";
+export * from "./publicaciones";
