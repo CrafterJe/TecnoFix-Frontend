@@ -17,7 +17,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -309,10 +308,10 @@ export function AutorizarCotizacionDialog({
 
         <Separator />
 
-        <ScrollArea className="flex-1 min-h-0">
-          {/* p-1.5 da aire para que el focus ring de inputs/selects no se recorte
-              contra el overflow-hidden del ScrollArea; pr-3 deja hueco al scrollbar */}
-          <div className="p-1.5 pr-3">
+        {/* overflow-y-auto nativo (no Radix ScrollArea): scrollea de forma fiable
+            dentro del flex-1 min-h-0 aunque el diálogo solo tenga max-h y no altura
+            fija. p-1.5 da aire para que el focus ring de inputs/selects no se recorte. */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-1.5 pr-3">
           {step === 1 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -790,8 +789,7 @@ export function AutorizarCotizacionDialog({
               </div>
             </div>
           )}
-          </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0">
           {step > 1 && (
