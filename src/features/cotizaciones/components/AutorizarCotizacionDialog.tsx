@@ -262,7 +262,7 @@ export function AutorizarCotizacionDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle2 className="h-5 w-5 text-green-400" />
@@ -293,7 +293,7 @@ export function AutorizarCotizacionDialog({
                 </div>
                 <span
                   className={cn(
-                    "text-xs truncate",
+                    "text-xs truncate hidden sm:inline",
                     isActive ? "text-foreground font-medium" : "text-muted-foreground",
                   )}
                 >
@@ -309,7 +309,10 @@ export function AutorizarCotizacionDialog({
 
         <Separator />
 
-        <ScrollArea className="flex-1 min-h-0 pr-3">
+        <ScrollArea className="flex-1 min-h-0">
+          {/* p-1.5 da aire para que el focus ring de inputs/selects no se recorte
+              contra el overflow-hidden del ScrollArea; pr-3 deja hueco al scrollbar */}
+          <div className="p-1.5 pr-3">
           {step === 1 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -444,9 +447,9 @@ export function AutorizarCotizacionDialog({
           {step === 2 && (
             <div className="space-y-5">
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <Label className="text-sm">Cliente</Label>
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     <Button
                       type="button"
                       size="sm"
@@ -787,6 +790,7 @@ export function AutorizarCotizacionDialog({
               </div>
             </div>
           )}
+          </div>
         </ScrollArea>
 
         <DialogFooter className="flex-shrink-0 gap-2 sm:gap-0">

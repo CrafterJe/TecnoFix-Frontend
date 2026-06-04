@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, X, ExternalLink, Loader2 } from "lucide-react";
+import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,16 +63,9 @@ export function PdfPreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-[95vw] h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
         <DialogHeader className="p-4 pb-3 border-b flex flex-row items-center justify-between space-y-0 shrink-0">
-          <DialogTitle className="text-base">{title}</DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onOpenChange(false)}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          {/* La X de cerrar la provee DialogContent (shadcn) automáticamente; no
+              duplicar un botón aquí. pr-8 evita que el título quede bajo la X. */}
+          <DialogTitle className="text-base pr-8">{title}</DialogTitle>
         </DialogHeader>
 
         {/* Visor — min-h-0 es clave para que el iframe respete el alto del flex parent */}

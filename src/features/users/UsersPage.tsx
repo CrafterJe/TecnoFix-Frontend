@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
@@ -216,6 +216,11 @@ function UserFormDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar usuario" : "Nuevo usuario"}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? "Actualiza los datos del usuario."
+              : "Completa los datos para registrar un nuevo usuario."}
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
@@ -296,7 +301,7 @@ function ChangePasswordDialog({
 
   const mutation = useMutation({
     mutationFn: (data: CambiarPasswordFormData) =>
-      usersApi.cambiarPassword(user.id, data.password),
+      usersApi.resetPassword(user.id, data),
     onSuccess: () => {
       toast.success("Contraseña actualizada");
       onOpenChange(false);
@@ -309,6 +314,9 @@ function ChangePasswordDialog({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Cambiar contraseña — {user.nombre}</DialogTitle>
+          <DialogDescription>
+            Establece una nueva contraseña para este usuario.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="space-y-4">

@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { cotizacionesApi } from "@/api/cotizaciones";
 import { formatCurrency, formatDate, formatearFormula } from "@/lib/helpers";
+import { handleExternalClick } from "@/lib/external";
 import { CotizacionSidebar } from "./components/CotizacionSidebar";
 import { ItemWizard } from "./components/ItemWizard";
 import { EstadoBanner } from "./components/EstadoBanner";
@@ -166,6 +167,7 @@ export function CotizacionDetailPage() {
                               href={item.link_referencia}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={handleExternalClick}
                               className="text-[11px] text-primary hover:underline truncate block"
                             >
                               {item.link_referencia}
