@@ -38,8 +38,7 @@ export function OrdenesPage() {
 
   const { data: tecnicos } = useQuery({
     queryKey: ["users", "tecnicos"],
-    queryFn: () => usersApi.list({ page_size: 100 }),
-    select: (d) => d.results.filter((u) => u.rol === "tecnico"),
+    queryFn: () => usersApi.tecnicos(),
   });
 
   const columns: Column<Orden>[] = [

@@ -152,13 +152,16 @@ export function LoginPage() {
                     {loading ? "Iniciando sesión..." : "Iniciar sesión"}
                   </Button>
 
-                  <button
+                  {/* Recuperación por correo deshabilitada: el backend aún no
+                      implementa POST /users/auth/password-reset/. Reactivar este
+                      botón cuando el endpoint exista. */}
+                  {/* <button
                     type="button"
                     onClick={() => setView("forgot")}
                     className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     ¿Olvidaste tu contraseña?
-                  </button>
+                  </button> */}
                 </form>
               </Form>
             </CardContent>

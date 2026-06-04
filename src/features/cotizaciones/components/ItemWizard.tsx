@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cotizacionesApi } from "@/api/cotizaciones";
 import { formatCurrency, formatearFormula } from "@/lib/helpers";
+import { handleExternalClick } from "@/lib/external";
 import type {
   CategoriaDispositivo, SubcategoriaDispositivo,
   TipoReparacion, ProductoApi, FuenteApi, FuenteApiRef,
@@ -1176,7 +1177,10 @@ function ProductoRow({
             href={prod.url_producto}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleExternalClick(e);
+            }}
             className="text-muted-foreground hover:text-foreground transition-colors"
             title="Ver en el sitio del proveedor"
             aria-label="Ver en el sitio del proveedor"

@@ -14,3 +14,8 @@ export interface UserPayload {
   rol: UserRole;
   password?: string;
 }
+
+export interface Tecnico {
+  id: number;
+  nombre: string;
+}

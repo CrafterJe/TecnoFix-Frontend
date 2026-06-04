@@ -30,17 +30,18 @@ export const ENDPOINTS = {
     detail: (id: number) => `/inventario/${id}/`,
     ajustarStock: (id: number) => `/inventario/${id}/ajustar-stock/`,
     compatibles: {
-      list: "/inventario/compatibles/",
-      detail: (id: number) => `/inventario/compatibles/${id}/`,
+      list: "/inventario/compatibilidades/",
+      detail: (id: number) => `/inventario/compatibilidades/${id}/`,
     },
   },
   users: {
     list: "/users/",
+    tecnicos: "/users/tecnicos/",
     detail: (id: number) => `/users/${id}/`,
-    cambiarPassword: (id: number) => `/users/${id}/cambiar-password/`,
+    resetPassword: (id: number) => `/users/${id}/reset-password/`,
     cambiarPasswordPropio: (id: number) => `/users/${id}/change-password/`,
-    activar: (id: number) => `/users/${id}/activar/`,
-    desactivar: (id: number) => `/users/${id}/desactivar/`,
+    activar: (id: number) => `/users/${id}/activate/`,
+    desactivar: (id: number) => `/users/${id}/deactivate/`,
   },
   auditoria: {
     list: "/auditoria/",
